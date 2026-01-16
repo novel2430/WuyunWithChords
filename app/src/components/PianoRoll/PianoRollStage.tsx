@@ -3,7 +3,8 @@ import { FC } from "react"
 import { Layout } from "../../Constants"
 import { useKeyScroll } from "../../hooks/useKeyScroll"
 import { Positioned } from "../ui/Positioned"
-import CanvasPianoRuler from "./CanvasPianoRuler"
+// import CanvasPianoRuler from "./CanvasPianoRuler"
+import { BarSelectablePianoRuler } from "../../MyCode/barSelection"
 import { PianoKeys } from "./PianoKeys"
 import { PianoRollCanvas } from "./PianoRollCanvas/PianoRollCanvas"
 
@@ -40,7 +41,7 @@ export const PianoRollStage: FC<PianoRollStageProps> = ({
       </Positioned>
       <LeftTopSpace width={keyWidth} />
       <RulerPosition left={keyWidth}>
-        <CanvasPianoRuler />
+        <BarSelectablePianoRuler />
       </RulerPosition>
     </Container>
   )

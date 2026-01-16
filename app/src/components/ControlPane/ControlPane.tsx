@@ -97,7 +97,7 @@ const Parent = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--color-background-dark);
+  background: var(--color-background);
   outline: none;
 `
 

@@ -135,7 +135,7 @@ const PianoRollWrapper: FC = () => {
       <StyledSplitPane
         split="horizontal"
         minSize={50}
-        defaultSize={"60%"}
+        defaultSize={"70%"}
         onChange={onChangeSplitPane}
       >
         <Alpha
