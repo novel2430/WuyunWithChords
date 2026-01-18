@@ -6,6 +6,9 @@ import { useStores } from "../hooks/useStores"
 import { useMobxGetter } from "../hooks/useMobxSelector"
 // import { TaskListView } from "./TaskList"
 
+import { ChordsModePane } from "./chords/ChordsModePane"
+import { UploadMidiPanel } from "./uploadMidi/UploadMidiPanel"
+
 import { useToast } from "dialog-hooks"
 
 const Main = styled.div`
@@ -86,12 +89,9 @@ export function RightPanel() {
       <SwitchArea>
         <AnimatedPane key={mode}>
           <ContentArea>
-            {mode === "chords" && (
-              <>
-              </>
-            )}
+            {mode === "chords" && <ChordsModePane />}
 
-            {mode === "upload" && <></>}
+            {mode === "upload" && <UploadMidiPanel />}
             {mode === "mix" && <></>}
             {mode === "task" && <></>}
           </ContentArea>
