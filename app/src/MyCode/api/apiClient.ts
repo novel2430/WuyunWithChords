@@ -102,6 +102,18 @@ export type RefMidiToMidiRequest = {
   inst?: "piano" | "guitar" | "bass"
 }
 
+
+export type RefMidisMixSetRequest = {
+  session_id: string
+  chords: string[]
+  chord_beats?: number[]
+  segmentation: string
+  bpm: number
+  alphas: number[]
+  midi_a: File
+  midi_b: File
+}
+
 export const apiClient = {
   health(): Promise<HealthResponse> {
     return requestJson("GET", "/health")
@@ -125,6 +137,19 @@ export const apiClient = {
     form.set("ref_midi", req.ref_midi, req.ref_midi.name || "ref.mid")
     if (req.inst) form.set("inst", req.inst)
     return requestForm("/tasks/ref_midi_to_midi", form)
+  },
+
+  submitRefMidisMixSet(req: RefMidisMixSetRequest): Promise<TaskSubmitResponse> {
+    const form = new FormData()
+    form.set('session_id', req.session_id)
+    form.set('chords', JSON.stringify(req.chords))
+    if (req.chord_beats) form.set('chord_beats', JSON.stringify(req.chord_beats))
+    form.set('segmentation', req.segmentation)
+    form.set('bpm', String(req.bpm))
+    form.set('alphas', JSON.stringify(req.alphas))
+    form.set('midi_a', req.midi_a, req.midi_a.name || 'a.mid')
+    form.set('midi_b', req.midi_b, req.midi_b.name || 'b.mid')
+    return requestForm('/tasks/ref_midis_mix_set', form)
   },
 
   getTask(taskId: string): Promise<TaskStatusResponse> {

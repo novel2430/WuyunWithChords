@@ -4,11 +4,11 @@ import { SegmentedControl } from "./SegmentedControl"
 import { CONSTANTS } from "./constants"
 import { useStores } from "../hooks/useStores"
 import { useMobxGetter } from "../hooks/useMobxSelector"
-// import { TaskListView } from "./TaskList"
 
 import { ChordsModePane } from "./chords/ChordsModePane"
 import { UploadMidiPanel } from "./uploadMidi/UploadMidiPanel"
 import { TaskListPanel } from "./tasks/TaskListPanel"
+import { MixPanel } from "./mix/MixPanel"
 
 import { useToast } from "dialog-hooks"
 
@@ -97,7 +97,7 @@ export function RightPanel() {
             {mode === "chords" && <ChordsModePane />}
 
             {mode === "upload" && <UploadMidiPanel />}
-            {mode === "mix" && <></>}
+            {mode === "mix" && <MixPanel />}
             {mode === "task" && <TaskListPanel />}
           </ContentArea>
         </AnimatedPane>

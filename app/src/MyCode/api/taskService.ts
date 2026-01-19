@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef } from "react"
 import { emptyTrack } from "@signal-app/core"
 import { useToast } from "dialog-hooks"
 
-import { apiClient, ChordsToMidisRequest, RefMidiToMidiRequest } from "./apiClient"
+import { apiClient, ChordsToMidisRequest, RefMidiToMidiRequest, RefMidisMixSetRequest } from "./apiClient"
+
 
 // 你已有的 store 单例
 import { myCodeUIStore } from "../store" // ← 按你的真实路径改一下
@@ -121,9 +122,11 @@ export function useMyCodeTaskService() {
 
         if (st.status === "succeeded" || st.status === "failed" || st.status === "canceled") {
           if (st.status === "succeeded") {
-            const inst = (st as any).inst as any
-            if (inst === "piano" || inst === "guitar" || inst === "bass") {
-              myCodeUIStore.setActiveTaskForInstrument(inst, st.task_id)
+            if (st.kind === "ref_midis_mix_set") {
+              const inst = (st as any).inst as any
+              if (inst === "piano" || inst === "guitar" || inst === "bass") {
+                myCodeUIStore.setActiveTaskForInstrument(inst, st.task_id)
+              }
             }
           }
           stopPolling(taskId)
@@ -157,7 +160,7 @@ export function useMyCodeTaskService() {
   // ====== 统一 runTask：submit + 入 store + 轮询 ======
   const runTask = useCallback(
     async (
-      kind: "chords_to_midis" | "ref_midi_to_midi",
+      kind: "chords_to_midis" | "ref_midi_to_midi" | "ref_midis_mix_set",
       payload: any,
       opts?: { inst?: "piano" | "guitar" | "bass" },
     ) => {
@@ -172,13 +175,19 @@ export function useMyCodeTaskService() {
           ...(opts?.inst ? { inst: opts.inst } : {}),
         }
         submitResp = await apiClient.submitChordsToMidis(req)
-      } else {
+      } else if (kind === "ref_midi_to_midi") {
         const req: RefMidiToMidiRequest = {
           ...payload,
           session_id: sessionId,
           ...(opts?.inst ? { inst: opts.inst } : {}),
         }
         submitResp = await apiClient.submitRefMidiToMidi(req)
+      } else {
+        const req: RefMidisMixSetRequest = {
+          ...payload,
+          session_id: sessionId,
+        }
+        submitResp = await apiClient.submitRefMidisMixSet(req)
       }
 
       const now = Date.now()
@@ -276,6 +285,71 @@ export function useMyCodeTaskService() {
         },
         { inst: instFinal },
       )
+      myCodeUIStore.upsertTask({ taskId, inputBars: bars, inputChords: chords })
+      return taskId
+    },
+    [runTask, currentTempo],
+  )
+
+  const runRefMidisMixSetFromStore = useCallback(
+    async (
+      midiA: File,
+      midiB: File,
+      alphas: number[] = [0, 0.25, 0.5, 0.75, 1],
+    ) => {
+      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+
+      const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
+      const segmentation = buildSegmentationFromBars(bars)
+      const chord_beats = chords.map(() => 4)
+
+      const bpm = Number(currentTempo.toFixed(2))
+
+      const taskId = await runTask(
+        "ref_midis_mix_set",
+        {
+          chords,
+          chord_beats,
+          segmentation,
+          bpm,
+          alphas,
+          midi_a: midiA,
+          midi_b: midiB,
+        },
+      )
+
+      myCodeUIStore.upsertTask({ taskId, inputBars: bars, inputChords: chords })
+      return taskId
+    },
+    [runTask, currentTempo],
+  )
+
+  const runRefMidisMixSet = useCallback(
+    async (args: {
+      midiA: File
+      midiB: File
+      bars: number
+      alphas?: number[]
+    }) => {
+      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+
+      const bars = Math.max(0, Math.floor(args.bars))
+      const segmentation = buildSegmentationFromBars(bars)
+      const chord_beats = chords.map(() => 4)
+
+      const bpm = currentTempo.toFixed(2)
+      const alphas = (args.alphas?.length ? args.alphas : [0, 0.25, 0.5, 0.75, 1])
+
+      const taskId = await runTask("ref_midis_mix_set", {
+        chords,
+        chord_beats,
+        segmentation,
+        bpm,
+        alphas,
+        midi_a: args.midiA,
+        midi_b: args.midiB,
+      })
+
       myCodeUIStore.upsertTask({ taskId, inputBars: bars, inputChords: chords })
       return taskId
     },
@@ -558,7 +632,9 @@ export function useMyCodeTaskService() {
 
     runChordsToMidisFromStore,
     runRefMidiToMidiFromStore,
+    runRefMidisMixSet,
     applyArtifactToSelection,
+    runRefMidisMixSetFromStore,
   }
 
 

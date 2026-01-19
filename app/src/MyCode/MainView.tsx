@@ -84,7 +84,7 @@ export function MainView() {
         <StyledSplitPane
           split="vertical"
           minSize={220}
-          defaultSize={"80%"}
+          defaultSize={"75%"}
           style={{ width: "100%", height: "93%" }}
           pane1Style={{ display: "flex", minWidth: 0, minHeight: 0 }}
           pane2Style={{ display: "flex", minWidth: 0, minHeight: 0 }}

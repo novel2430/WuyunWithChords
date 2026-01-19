@@ -68,34 +68,12 @@ const Chip = styled.button<{ active: boolean }>`
   }
 `
 
-const StatusPill = styled.div`
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: rgba(255,255,255,0.03);
-  opacity: 0.9;
-`
-
 const ResultCard = styled.div`
   padding: 10px 10px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.03);
   color: var(--color-text);
-`
-
-const ResultTopRow = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-`
-
-const SegTabs = styled.div`
-  display: flex;
-  gap: 8px;
 `
 
 const Actions = styled.div`
