@@ -12,6 +12,7 @@ import { CONSTANTS } from "../constants"
 import { useMyCodeUI } from "../store/useMyCodeUI"
 import { useSelectionInfo } from "../barSelection/useSelectionInfo"
 import { validateSelection, validateChords } from "../chordsUtils"
+import { useMyCodeTaskService } from "../api/taskService"
 
 
 const Wrap = styled.div`
@@ -133,6 +134,8 @@ export const ChordsModePane: FC = () => {
   const track = useTrack(selectedTrackId)
   const trackName = track.name
 
+  const { runChordsToMidisFromStore } = useMyCodeTaskService()
+
   const {
     instruments: inst,
     chordCells,
@@ -150,6 +153,10 @@ export const ChordsModePane: FC = () => {
     if (inst.size === 0) return { ok: false, msg: "请选择至少一种乐器。" }
     return validateChords(chordCells, selectionInfo!.bars)
   }, [selectionInfo, inst, chordCells])
+
+  const doGenerate = useCallback(async () => {
+    await runChordsToMidisFromStore()
+  }, [runChordsToMidisFromStore])
 
   useEffect(() => {
     if (selectionInfo?.bars) ensureChordCellsLength(selectionInfo.bars)
@@ -217,7 +224,7 @@ export const ChordsModePane: FC = () => {
         >
           {CONSTANTS.chordMode.clearBtnLabel}
         </Btn>
-        <GenBtn kind="primary" onMouseDown={() => { }} disabled={!validation.ok}>
+        <GenBtn kind="primary" onMouseDown={doGenerate} disabled={!validation.ok}>
           {CONSTANTS.chordMode.genBtnLabel}
         </GenBtn>
       </Actions>
