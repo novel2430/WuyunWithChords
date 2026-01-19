@@ -45,7 +45,8 @@ const defaultSoundFonts: (SoundFontItem & Metadata & { id: number })[] =
           id: -999, // Use negative number to avoid conflict with user saved soundfonts
           type: "remote",
           name: "A320U.sf2 (Signal Factory Sound)",
-          url: "https://cdn.jsdelivr.net/gh/ryohey/signal@4569a31/public/A320U.sf2",
+          // url: "https://cdn.jsdelivr.net/gh/ryohey/signal@4569a31/public/A320U.sf2",
+          url: "https://cdn.jsdmirror.com/gh/ryohey/signal@4569a31/public/A320U.sf2",
         },
       ]
 

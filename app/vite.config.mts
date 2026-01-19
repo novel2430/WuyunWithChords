@@ -6,6 +6,7 @@ import svgr from "vite-plugin-svgr"
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.join(process.cwd(), ".."), "FIREBASE_")
+  const isProd = mode === "production"
 
   return {
     plugins: [
@@ -65,5 +66,6 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env": env,
     },
+    base: isProd ? "/novel-wuyun/" : "/",
   }
 })
