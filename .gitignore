@@ -48,3 +48,4 @@ dist
 *.pfx
 
 .vscode/
+*.DS_Store

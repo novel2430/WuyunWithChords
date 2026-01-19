@@ -5,7 +5,7 @@ import { useTrack } from "../../hooks/useTrack"
 import { useBarSelection } from "./store"
 import { extractNotesInRange } from "./midiRange"
 
-/**
+/*
  * 选区变化时，把：选中小节范围、当前 track、以及选区内 notes 打印到 console。
  * 只用于调试，建议后续移除/加开关。
  */

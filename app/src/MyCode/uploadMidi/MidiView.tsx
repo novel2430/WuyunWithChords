@@ -58,12 +58,12 @@ const Btn = styled.button<{ kind?: "primary" | "ghost" }>`
 
   border: 1px solid var(--color-border);
   background: ${({ kind }) =>
-    kind === "primary" ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.03)"};
+    kind === "primary" ? "var(--color-theme)" : "rgba(255,255,255,0.03)"};
   color: var(--color-text);
 
   &:hover {
     background: ${({ kind }) =>
-    kind === "primary" ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)"};
+    kind === "primary" ? "var(--color-theme)" : "rgba(255,255,255,0.06)"};
   }
 
   &:disabled {
@@ -95,6 +95,8 @@ export const MidiView: FC = () => {
         const file = e.currentTarget.files?.[0]
         if (!file) return
 
+        myCodeUIStore.setUploadedMidiFile(file)
+
         const result = await parseMidiFileFirstTrack(file)
 
         // ✅ 写入 store（不再 setState）
@@ -102,6 +104,7 @@ export const MidiView: FC = () => {
       } catch (err) {
         console.error(err)
         myCodeUIStore.setUploadedMidi(null)
+        myCodeUIStore.setUploadedMidiFile(null)
         toast.error((err as Error)?.message ?? "解析 MIDI 失败。")
       } finally {
         e.currentTarget.value = ""
@@ -167,7 +170,7 @@ export const MidiView: FC = () => {
           <Btn kind="primary" onMouseDown={onPickFile}>
             {CONSTANTS.uploadMode.chooseMidiBtnLabel}
           </Btn>
-          <Btn kind="primary" disabled={!parsed || !canImport} onMouseDown={doImport}>
+          <Btn kind="ghost" disabled={!parsed || !canImport} onMouseDown={doImport}>
             {CONSTANTS.uploadMode.importMidiToTrackBtnLabel}
           </Btn>
         </Row>

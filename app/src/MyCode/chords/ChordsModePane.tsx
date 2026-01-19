@@ -151,12 +151,13 @@ const TabBtn = styled.button<{ active: boolean }>`
 
   border: 1px solid var(--color-border);
   background: ${({ active }) =>
-    active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.03)"};
+    active ? "var(--color-theme)" : "rgba(255,255,255,0.03)"};
   color: var(--color-text);
   opacity: ${({ active }) => (active ? 1 : 0.85)};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: ${({ active }) =>
+      active ? "var(--color-theme)" : "rgba(255,255,255,0.03)"};
   }
 `
 
@@ -199,6 +200,21 @@ const ArtifactRow = styled.button<{ active: boolean }>`
 const ArtifactName = styled.div`
   font-size: 13px;
   opacity: 0.92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+const ArtifactLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`
+
+const ArtifactMeta = styled.div`
+  font-size: 11px;
+  opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -249,11 +265,10 @@ export const ChordsModePane: FC = () => {
     // ✅ 结果选择区要用
     activeInstrument,
     setActiveInstrument,
-    activeTaskIdByInstrument,
-    selectedArtifactIdByInstrument,
     setSelectedArtifactForInstrument,
-    tasksById,
     artifactOpsById,
+    activeTaskForActiveInstrument,
+    selectedArtifactIdForActiveInstrument,
   } = useMyCodeUI()
 
 
@@ -274,10 +289,9 @@ export const ChordsModePane: FC = () => {
     }
   }, [runChordsToMidisFromStore])
 
-  const activeTaskId = activeTaskIdByInstrument?.[activeInstrument] ?? null
-  const activeTask = activeTaskId ? tasksById?.[activeTaskId] : null
+  const activeTask = activeTaskForActiveInstrument
+  const selectedArtifactId = selectedArtifactIdForActiveInstrument
 
-  const selectedArtifactId = selectedArtifactIdByInstrument?.[activeInstrument] ?? null
   const artifacts = activeTask?.artifacts ?? []
 
   const activeArtifactOp = selectedArtifactId ? (artifactOpsById?.[selectedArtifactId] ?? {}) : {}
@@ -321,6 +335,13 @@ export const ChordsModePane: FC = () => {
   return (
     <Wrap>
       <div>
+        <SelectionInfoBox
+          trackName={trackName}
+          trackId={selectedTrackId}
+          selectionInfo={selectionInfo}
+        />
+      </div>
+      <div>
         <SectionTitle>{CONSTANTS.chordMode.instrumentLabel}</SectionTitle>
         <InstrumentsRow>
           <Chip active={inst.has("piano")} onMouseDown={() => toggleInstrument("piano")}>
@@ -346,13 +367,6 @@ export const ChordsModePane: FC = () => {
         {!validation.ok && <ErrorText>{validation.msg}</ErrorText>}
       </div>
 
-      <div>
-        <SelectionInfoBox
-          trackName={trackName}
-          trackId={selectedTrackId}
-          selectionInfo={selectionInfo}
-        />
-      </div>
 
       <div>
         <SectionTitle>{CONSTANTS.chordMode.resultTab.headLabel}</SectionTitle>
@@ -378,7 +392,7 @@ export const ChordsModePane: FC = () => {
             </StatusPill>
           </ResultTopRow>
 
-          {!activeTask ? (
+          {(!activeTask || activeTask.kind != "chords_to_midis") ? (
             <>
               <div style={{ opacity: 0.85, fontSize: 13, fontWeight: "bold" }}>
                 {CONSTANTS.chordMode.resultTab.noTaskLabel}
@@ -402,6 +416,13 @@ export const ChordsModePane: FC = () => {
               <ArtifactList>
                 {artifacts.map((a, idx) => {
                   const isActive = a.artifact_id === selectedArtifactId
+                  const barsText = activeTask?.inputBars ? `${activeTask.inputBars}小節` : ""
+                  const chordsText = (activeTask?.inputChords ?? [])
+                    .map((s) => (s ?? "").trim())
+                    .map((s) => (s.length ? s : "—"))
+                    .join("-")
+                  const metaText = [barsText, chordsText].filter(Boolean).join(" · ")
+
                   return (
                     <ArtifactRow
                       key={a.artifact_id}
@@ -409,9 +430,12 @@ export const ChordsModePane: FC = () => {
                       onMouseDown={() => onPickArtifact(a.artifact_id)}
                       title={a.filename}
                     >
-                      <ArtifactName>
-                        {idx + 1}. {a.filename || a.artifact_id}
-                      </ArtifactName>
+                      <ArtifactLeft>
+                        <ArtifactName>
+                          {idx + 1}. {a.filename || a.artifact_id}
+                        </ArtifactName>
+                        {!!metaText && <ArtifactMeta>{metaText}</ArtifactMeta>}
+                      </ArtifactLeft>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>{isActive ? "选中" : ""}</div>
                     </ArtifactRow>
                   )

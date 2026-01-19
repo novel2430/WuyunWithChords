@@ -99,6 +99,7 @@ export type RefMidiToMidiRequest = {
   segmentation: string
   bpm: number
   ref_midi: File
+  inst?: "piano" | "guitar" | "bass"
 }
 
 export const apiClient = {
@@ -122,6 +123,7 @@ export const apiClient = {
     form.set("segmentation", req.segmentation)
     form.set("bpm", String(req.bpm))
     form.set("ref_midi", req.ref_midi, req.ref_midi.name || "ref.mid")
+    if (req.inst) form.set("inst", req.inst)
     return requestForm("/tasks/ref_midi_to_midi", form)
   },
 

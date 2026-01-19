@@ -39,6 +39,14 @@ export const CONSTANTS = {
     importMidiToTrackBtnLabel: "导入 MIDI 至新轨道",
     chooseMidiBtnLabel: "上传文件",
     clearBtnLabel: "清除",
+    instrumentLabel: "🎷 乐器选择 (單選)",
+    refMidiGenBtnLabel: "基於上傳生成",
+    refSelectionGenBtnLabel: "基於選區生成",
+    refSourceLabel: "📝 參考來源",
+    refSelectionLabel: "參考選區",
+    refSelectionHint: "以選中的小節內容當作參考",
+    refMidiLabel: "參考上傳 MIDI",
+    refMidiHint: "以下方上傳的 MIDI 當作參考",
   },
 }
 

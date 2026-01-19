@@ -94,7 +94,7 @@ const HandleR = styled.div({
 })
 
 export const BarSelectionOverlay: FC = () => {
-  useBarSelectionDebugLog(true)
+  useBarSelectionDebugLog(false)
   const { barSelection, clearBarSelection } = useBarSelection()
   const { onMouseDown } = useBarSelectionGesture()
   const { transform, scrollLeft } = useTickScroll()

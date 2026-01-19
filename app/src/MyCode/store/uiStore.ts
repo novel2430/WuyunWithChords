@@ -33,6 +33,8 @@ export type TaskRecord = {
   createdAt: number
   updatedAt: number
   inst?: Instrument | null
+  inputBars?: number | null
+  inputChords?: string[] | null
 }
 
 export type ArtifactOpState = {
@@ -149,8 +151,15 @@ export class MyCodeUIStore {
     this.uploadedMidi = p
   }
 
+  uploadedMidiFile: File | null = null
+
+  setUploadedMidiFile(file: File | null) {
+    this.uploadedMidiFile = file
+  }
+
   clearUploadedMidi = () => {
     this.uploadedMidi = null
+    this.uploadedMidiFile = null
   }
 
   // ====== Session ======

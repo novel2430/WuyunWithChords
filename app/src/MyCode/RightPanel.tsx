@@ -8,12 +8,16 @@ import { useMobxGetter } from "../hooks/useMobxSelector"
 
 import { ChordsModePane } from "./chords/ChordsModePane"
 import { UploadMidiPanel } from "./uploadMidi/UploadMidiPanel"
+import { TaskListPanel } from "./tasks/TaskListPanel"
 
 import { useToast } from "dialog-hooks"
 
 const Main = styled.div`
   height: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; 
 `
 
 const Top = styled.div`
@@ -26,8 +30,10 @@ const Top = styled.div`
 
 const SwitchArea = styled.div`
   position: relative;
-  min-height: 120px;
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 `
 
 const AnimatedPane = styled.div`
@@ -42,8 +48,7 @@ const AnimatedPane = styled.div`
 `
 
 const ContentArea = styled.div`
-  height: 100%;
-  padding: 10px;
+  padding: 10px 20px;
 `
 
 const HintRow = styled.div`
@@ -93,7 +98,7 @@ export function RightPanel() {
 
             {mode === "upload" && <UploadMidiPanel />}
             {mode === "mix" && <></>}
-            {mode === "task" && <></>}
+            {mode === "task" && <TaskListPanel />}
           </ContentArea>
         </AnimatedPane>
       </SwitchArea>

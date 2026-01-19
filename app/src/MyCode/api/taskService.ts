@@ -116,6 +116,7 @@ export function useMyCodeTaskService() {
             filename: a.filename,
             url: a.url,
           })),
+          updatedAt: Date.now(),
         })
 
         if (st.status === "succeeded" || st.status === "failed" || st.status === "canceled") {
@@ -172,9 +173,15 @@ export function useMyCodeTaskService() {
         }
         submitResp = await apiClient.submitChordsToMidis(req)
       } else {
-        const req: RefMidiToMidiRequest = { ...payload, session_id: sessionId }
+        const req: RefMidiToMidiRequest = {
+          ...payload,
+          session_id: sessionId,
+          ...(opts?.inst ? { inst: opts.inst } : {}),
+        }
         submitResp = await apiClient.submitRefMidiToMidi(req)
       }
+
+      const now = Date.now()
 
       // 2) write store
       myCodeUIStore.upsertTask({
@@ -185,6 +192,8 @@ export function useMyCodeTaskService() {
         status: "queued",
         error: null,
         artifacts: [],
+        createdAt: now,
+        updatedAt: now,
       })
 
       // 你要按 inst 组织展示：这里就把“该 inst 的 active task”指到这个 task
@@ -203,30 +212,75 @@ export function useMyCodeTaskService() {
 
   const { currentTempo } = useConductorTrack()
   const runChordsToMidisFromStore = useCallback(
-  async (inst?: "piano" | "guitar" | "bass") => {
-    const chords = myCodeUIStore.chordCells.map((s) => s.trim())
-    const bpm = currentTempo.toFixed(2)
-    const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
-    const segmentation = buildSegmentationFromBars(bars)
-    const n_midi = 5
-    const chord_beats = chords.map(() => 4)
+    async (inst?: "piano" | "guitar" | "bass") => {
+      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+      const bpm = currentTempo.toFixed(2)
+      const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
+      const segmentation = buildSegmentationFromBars(bars)
+      const n_midi = 5
+      const chord_beats = chords.map(() => 4)
 
-    // ✅ inst 优先用入参，否则你也可以 fallback 到 store 的某个默认
-    const instFinal = inst ?? "piano"
+      // ✅ inst 优先用入参，否则你也可以 fallback 到 store 的某个默认
+      const instFinal = inst ?? "piano"
 
-    return runTask("chords_to_midis", {
-      chords,
-      chord_beats,
-      segmentation,
-      bpm,
-      n_midi,
-      inst: instFinal, // ✅ 直接进 payload
+      const taskId = await runTask(
+        "chords_to_midis",
+        {
+          chords,
+          chord_beats,
+          segmentation,
+          bpm,
+          n_midi,
+          inst: instFinal,
+        },
+        { inst: instFinal },
+      )
+
+      // ✅ 把当初生成用的 bars + chords 记到这个 task 上
+      myCodeUIStore.upsertTask({
+        taskId,
+        inputBars: bars,
+        inputChords: chords,
+      })
+
+      return taskId
     },
-    { inst: instFinal })
-  },
-  [runTask, currentTempo],
-)
+    [runTask, currentTempo],
+  )
 
+  const runRefMidiToMidiFromStore = useCallback(
+    async (refMidi: File, inst?: "piano" | "guitar" | "bass") => {
+      // 1) chords / bars：跟 chords_to_midis 一樣，沿用 store 的 chordCells + lastSelection
+      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+
+      const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
+      const segmentation = buildSegmentationFromBars(bars)
+      const chord_beats = chords.map(() => 4)
+
+      // 2) bpm：后端 type 是 number，别用 toFixed 的 string
+      const bpm = Number(currentTempo.toFixed(2))
+
+      // 3) inst：单选乐器的最终值
+      const instFinal = inst ?? "piano"
+
+      // 4) 提交任务（ref_midi_to_midi）
+      const taskId = await runTask(
+        "ref_midi_to_midi",
+        {
+          chords,
+          chord_beats,
+          segmentation,
+          bpm,
+          ref_midi: refMidi,
+          inst: instFinal,
+        },
+        { inst: instFinal },
+      )
+      myCodeUIStore.upsertTask({ taskId, inputBars: bars, inputChords: chords })
+      return taskId
+    },
+    [runTask, currentTempo],
+  )
 
   // ====== artifact：导入为新轨道 ======
   const importArtifactAsNewTrack = useCallback(
@@ -350,22 +404,121 @@ export function useMyCodeTaskService() {
 
         const scale = parsed.payload.timebase > 0 ? (currentTimebase / parsed.payload.timebase) : 1
         const rangeLenInPayloadTicks = Math.max(1, Math.floor(rangeLen / Math.max(1e-6, scale)))
-        // ✅ 先把 payload 裁切到选区长度（仍以 0 为起点）
-        const clippedPayload = clampMidiNotesPayloadToRangeLen(parsed.payload, rangeLenInPayloadTicks)
 
-        if (!(clippedPayload.notes?.length ?? 0)) {
-          throw new Error("导入后在该选区内没有可写入的 notes（可能选区太短）。")
+        const selBars = Number(sel.bars ?? 0)
+        if (selBars <= 0) throw new Error("选区小节数无效（bars <= 0）。")
+
+        const normalizePayloadBarStartToZero = (payload: any, barTicks: number) => {
+          const notes = payload?.notes ?? []
+          if (!notes.length) return payload
+
+          const minTick = notes.reduce((m: number, n: any) => Math.min(m, Number(n.tick ?? 0)), Infinity)
+          if (!isFinite(minTick)) return payload
+
+          // 关键：把「最早 note 所在的小节」的小节起点对齐到 0
+          const barIndex = Math.floor(Math.max(0, minTick) / Math.max(1, barTicks)) // 0-based
+          const shift = barIndex * Math.max(1, barTicks)
+
+          if (shift <= 0) return payload
+
+          const shiftedNotes = notes.map((n: any) => ({
+            ...n,
+            tick: Math.max(0, Number(n.tick ?? 0) - shift),
+          }))
+
+          return { ...payload, notes: shiftedNotes }
+        }
+
+
+        // 以选区反推每小节 tick（在 payload 的 timebase 上）
+        const barTicks = Math.max(1, Math.floor(rangeLenInPayloadTicks / Math.max(1, selBars)))
+
+        // 1) 找到 artifactBars：优先从任务元信息拿 inputBars
+        const findTaskBarsByArtifactId = (aid: string): number | null => {
+          const tasksById = (myCodeUIStore as any).tasksById as Record<string, any> | undefined
+          if (!tasksById) return null
+          for (const tid of Object.keys(tasksById)) {
+            const task = tasksById[tid]
+            const arts = task?.artifacts ?? []
+            if (arts.some((x: any) => x?.artifact_id === aid)) {
+              const b = Number(task?.inputBars ?? 0)
+              return b > 0 ? b : null
+            }
+          }
+          return null
+        }
+
+        const guessBarsFromPayload = (payload: any, barTicksGuess: number): number => {
+          const notes = payload?.notes ?? []
+          if (!notes.length) return 0
+          const maxEnd = notes.reduce((m: number, n: any) => Math.max(m, Number(n.tick ?? 0) + Number(n.duration ?? 0)), 0)
+          return Math.max(1, Math.ceil(maxEnd / Math.max(1, barTicksGuess)))
+        }
+
+        const artifactBars =
+          findTaskBarsByArtifactId(artifactId) ??
+          guessBarsFromPayload(parsed.payload, barTicks) // fallback
+
+        if (!artifactBars || artifactBars <= 0) {
+          throw new Error("无法确定该 artifact 的小节数（inputBars 缺失且无法从 MIDI 估算）。")
+        }
+
+        const normalizedPayload = normalizePayloadBarStartToZero(parsed.payload, barTicks)
+
+        // 2) clip / tile
+        const clipPayloadToLen = (payload: any, totalLen: number) => {
+          // 你现有函数：裁切到 totalLen（仍以 0 为起点）
+          return clampMidiNotesPayloadToRangeLen(payload, totalLen)
+        }
+
+        const tilePayloadToLen = (payload: any, loopLen: number, totalLen: number) => {
+          const srcNotes = payload?.notes ?? []
+          const out: any[] = []
+          if (!srcNotes.length) return { ...payload, notes: [] }
+
+          const reps = Math.ceil(totalLen / Math.max(1, loopLen))
+          for (let r = 0; r < reps; r++) {
+            const offset = r * loopLen
+            for (const n of srcNotes) {
+              const tick = Number(n.tick ?? 0) + offset
+              const dur = Number(n.duration ?? 0)
+              if (dur <= 0) continue
+              if (tick >= totalLen) continue
+              const end = tick + dur
+              const clippedDur = end > totalLen ? Math.max(0, totalLen - tick) : dur
+              if (clippedDur <= 0) continue
+              out.push({ ...n, tick, duration: clippedDur })
+            }
+          }
+
+          return { ...payload, notes: out }
+        }
+
+        let finalPayload: any
+        if (artifactBars >= selBars) {
+          // artifact 大于选区：只用前 selBars 小节
+          finalPayload = clipPayloadToLen(normalizedPayload, selBars * barTicks)
+        } else {
+          // artifact 小于选区：按小节循环铺满
+          const loopLen = Math.max(1, artifactBars * barTicks)
+          finalPayload = tilePayloadToLen(normalizedPayload, loopLen, selBars * barTicks)
+        }
+
+        // 兜底：再裁一刀，避免 tick/duration 误差导致超界
+        finalPayload = clipPayloadToLen(finalPayload, rangeLenInPayloadTicks)
+
+        if (!(finalPayload.notes?.length ?? 0)) {
+          throw new Error("导入后在该选区内没有可写入的 notes（可能选区太短或参考为空）。")
         }
 
         pushHistory()
-
-        // ✅ 统一：先删 [from,to) 内 notes，再把 payload 写到 from（含 timebase 缩放）
         replaceMidiNotesInRange(
           t,
-          clippedPayload,
+          finalPayload,
           range,
           { targetTimebase: currentTimebase, scaleToTarget: true },
         )
+
 
         updateEndOfSong()
         jumpToTick(range.from)
@@ -404,6 +557,7 @@ export function useMyCodeTaskService() {
     importArtifactAsNewTrack,
 
     runChordsToMidisFromStore,
+    runRefMidiToMidiFromStore,
     applyArtifactToSelection,
   }
 

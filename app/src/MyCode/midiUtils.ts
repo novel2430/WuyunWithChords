@@ -1,11 +1,13 @@
 // src/MyCode/midiUtils.ts
-import { Beat, NoteEvent, Range } from "@signal-app/core"
+import { Beat, NoteEvent, Range, emptySong, emptyTrack, songToMidi } from "@signal-app/core"
 import { songFromFile } from "../actions/file"
 import { usePlayer } from "../hooks/usePlayer"
 import { usePianoRollTickScroll } from "../hooks/usePianoRoll"
 import { useCallback } from "react"
 
 /* ========= Types ========= */
+
+type Inst = "piano" | "guitar" | "bass"
 
 export type MidiNotePayload = {
   timebase: number
@@ -310,4 +312,58 @@ export function useJumpToTick() {
     },
     [setPosition, setScrollLeftInTicks],
   )
+}
+
+function instToProgram(inst: Inst): number {
+  // GM programs (0-based in many libs). 不用太精确，只要是个合理音色即可
+  if (inst === "guitar") return 24 // Acoustic Guitar (nylon)
+  if (inst === "bass") return 32   // Acoustic Bass
+  return 0                         // Acoustic Grand Piano
+}
+
+/*
+ * 把「选区相对 tick」的 notes 打包成一个 MIDI File（只在内存中存在）
+ * - sourceTimebase: 当前工程 song.timebase
+ * - targetTimebase: 生成出来的 MIDI 的 TPQ（建议固定 480，兼容性最好）
+ */
+export function notesToInMemoryMidiFile(
+  notesRel: Omit<NoteEvent, "id">[],
+  sourceTimebase: number,
+  inst: Inst,
+  fileName = "ref_selection.mid",
+  targetTimebase = 480,
+): File {
+  const src = Math.max(1, Math.floor(sourceTimebase))
+  const tgt = Math.max(1, Math.floor(targetTimebase))
+  const scale = tgt / src
+
+  // 1) 生成一个空 Song（默认带 conductor track）
+  const song = emptySong()
+
+  // 如果 emptySong 的 timebase 不是 480，你也可以在这里尝试设定：
+  // (看 core 的实现是否允许写入；不允许也没关系，我们用缩放来保证 ticks 正确)
+  ;(song as any).timebase = tgt
+
+  // 2) 只保留 conductor track，重建一个乐器 track
+  const conductor = song.tracks.find((t: any) => t.isConductorTrack) ?? song.tracks[0]
+  const track = emptyTrack(instToProgram(inst))
+
+  // 3) 写入 notes（ticks/duration 缩放到 targetTimebase）
+  const notesScaled = (notesRel ?? []).map((n) => ({
+    ...n,
+    tick: Math.max(0, Math.round(Number(n.tick ?? 0) * scale)),
+    duration: Math.max(1, Math.round(Math.max(0, Number(n.duration ?? 0)) * scale)),
+    velocity: Math.max(1, Math.min(127, Math.round(Number(n.velocity ?? 80)))),
+    noteNumber: Math.max(0, Math.min(127, Math.round(Number(n.noteNumber ?? 60)))),
+  }))
+
+  ;(track as any).addEvents(notesScaled as any)
+
+  // 4) 拼回 song.tracks 并导出 bytes
+  ;(song as any).tracks = conductor ? [conductor, track] : [track]
+
+  const bytes = songToMidi(song) // Uint8Array
+
+  // 5) 变成 File（内存对象，不会触发任何下载）
+  return new File([bytes], fileName, { type: "audio/midi" })
 }
