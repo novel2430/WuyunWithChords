@@ -122,6 +122,109 @@ const GenBtn = styled.button<{ kind?: "primary" | "ghost" }>`
   }
 `
 
+const ResultCard = styled.div`
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text);
+`
+
+const ResultTopRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+`
+
+const SegTabs = styled.div`
+  display: flex;
+  gap: 8px;
+`
+
+const TabBtn = styled.button<{ active: boolean }>`
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  cursor: pointer;
+
+  border: 1px solid var(--color-border);
+  background: ${({ active }) =>
+    active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.03)"};
+  color: var(--color-text);
+  opacity: ${({ active }) => (active ? 1 : 0.85)};
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+`
+
+const StatusPill = styled.div`
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(255,255,255,0.03);
+  opacity: 0.9;
+`
+
+const ArtifactList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const ArtifactRow = styled.button<{ active: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  border: 1px solid ${({ active }) => (active ? "rgba(255,255,255,0.22)" : "var(--color-border)")};
+  background: ${({ active }) => (active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.03)")};
+  color: var(--color-text);
+  text-align: left;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+`
+
+const ArtifactName = styled.div`
+  font-size: 13px;
+  opacity: 0.92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+const SmallHint = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.75;
+`
+
+const ApplyBtn = styled.button<{ disabled?: boolean }>`
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  border: 1px solid var(--color-border);
+  background: var(--color-theme);
+  color: var(--color-text);
+
+  opacity: ${({ disabled }) => (disabled ? 0.45 : 1)};
+  cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
+`
+
+
 export const ChordsModePane: FC = () => {
   const toast = useToast()
   const { pushHistory } = useHistory()
@@ -134,7 +237,7 @@ export const ChordsModePane: FC = () => {
   const track = useTrack(selectedTrackId)
   const trackName = track.name
 
-  const { runChordsToMidisFromStore } = useMyCodeTaskService()
+  const { runChordsToMidisFromStore, applyArtifactToSelection } = useMyCodeTaskService()
 
   const {
     instruments: inst,
@@ -143,7 +246,16 @@ export const ChordsModePane: FC = () => {
     setChordCells,
     ensureChordCellsLength,
     setLastSelection,
+    // ✅ 结果选择区要用
+    activeInstrument,
+    setActiveInstrument,
+    activeTaskIdByInstrument,
+    selectedArtifactIdByInstrument,
+    setSelectedArtifactForInstrument,
+    tasksById,
+    artifactOpsById,
   } = useMyCodeUI()
+
 
   const { barSelection, clearBarSelection, selectionInfo } = useSelectionInfo()
 
@@ -155,8 +267,34 @@ export const ChordsModePane: FC = () => {
   }, [selectionInfo, inst, chordCells])
 
   const doGenerate = useCallback(async () => {
-    await runChordsToMidisFromStore()
+    const instArr = Array.from(inst)
+    if (instArr.length === 0) return
+    for (const instName of instArr) {
+      await runChordsToMidisFromStore(instName)
+    }
   }, [runChordsToMidisFromStore])
+
+  const activeTaskId = activeTaskIdByInstrument?.[activeInstrument] ?? null
+  const activeTask = activeTaskId ? tasksById?.[activeTaskId] : null
+
+  const selectedArtifactId = selectedArtifactIdByInstrument?.[activeInstrument] ?? null
+  const artifacts = activeTask?.artifacts ?? []
+
+  const activeArtifactOp = selectedArtifactId ? (artifactOpsById?.[selectedArtifactId] ?? {}) : {}
+  const isApplying = !!activeArtifactOp.downloading || !!activeArtifactOp.importing
+
+  const onPickArtifact = useCallback(
+    (artifactId: string) => {
+      setSelectedArtifactForInstrument(activeInstrument, artifactId)
+    },
+    [activeInstrument, setSelectedArtifactForInstrument],
+  )
+
+  const onApplySelected = useCallback(async () => {
+    if (!selectedArtifactId) return
+    await applyArtifactToSelection(selectedArtifactId)
+  }, [applyArtifactToSelection, selectedArtifactId])
+
 
   useEffect(() => {
     if (selectionInfo?.bars) ensureChordCellsLength(selectionInfo.bars)
@@ -215,6 +353,84 @@ export const ChordsModePane: FC = () => {
           selectionInfo={selectionInfo}
         />
       </div>
+
+      <div>
+        <SectionTitle>{CONSTANTS.chordMode.resultTab.headLabel}</SectionTitle>
+
+        <ResultCard>
+          <ResultTopRow>
+            <SegTabs>
+              <TabBtn active={activeInstrument === "piano"} onMouseDown={() => setActiveInstrument("piano")}>
+                {CONSTANTS.chordMode.resultTab.piano}
+              </TabBtn>
+              <TabBtn active={activeInstrument === "guitar"} onMouseDown={() => setActiveInstrument("guitar")}>
+                {CONSTANTS.chordMode.resultTab.guitar}
+              </TabBtn>
+              <TabBtn active={activeInstrument === "bass"} onMouseDown={() => setActiveInstrument("bass")}>
+                {CONSTANTS.chordMode.resultTab.bass}
+              </TabBtn>
+            </SegTabs>
+
+            <StatusPill>
+              {activeTask
+                ? `${activeTask.status}${activeTask.error ? " · error" : ""}`
+                : CONSTANTS.chordMode.resultTab.noTaskYet}
+            </StatusPill>
+          </ResultTopRow>
+
+          {!activeTask ? (
+            <>
+              <div style={{ opacity: 0.85, fontSize: 13, fontWeight: "bold" }}>
+                {CONSTANTS.chordMode.resultTab.noTaskLabel}
+              </div>
+              <SmallHint>
+                {CONSTANTS.chordMode.resultTab.noTaskHint}
+              </SmallHint>
+            </>
+          ) : activeTask.status !== "succeeded" ? (
+            <>
+              <div style={{ opacity: 0.85, fontSize: 13 }}>
+                {activeTask.status === "failed"
+                  ? `生成失败：${String(activeTask.error ?? "") || "unknown error"}`
+                  : "生成中..."}
+              </div>
+            </>
+          ) : artifacts.length === 0 ? (
+            <div style={{ opacity: 0.85, fontSize: 13 }}>任务成功但没有返回 artifacts。</div>
+          ) : (
+            <>
+              <ArtifactList>
+                {artifacts.map((a, idx) => {
+                  const isActive = a.artifact_id === selectedArtifactId
+                  return (
+                    <ArtifactRow
+                      key={a.artifact_id}
+                      active={isActive}
+                      onMouseDown={() => onPickArtifact(a.artifact_id)}
+                      title={a.filename}
+                    >
+                      <ArtifactName>
+                        {idx + 1}. {a.filename || a.artifact_id}
+                      </ArtifactName>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>{isActive ? "选中" : ""}</div>
+                    </ArtifactRow>
+                  )
+                })}
+              </ArtifactList>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                <ApplyBtn
+                  disabled={!selectedArtifactId || !selectionInfo || isApplying}
+                  onMouseDown={onApplySelected}
+                >
+                  {CONSTANTS.chordMode.resultTab.updateSelection}
+                </ApplyBtn>
+              </div>
+            </>
+          )}
+        </ResultCard>
+      </div>
+
 
       <Actions>
         <Btn

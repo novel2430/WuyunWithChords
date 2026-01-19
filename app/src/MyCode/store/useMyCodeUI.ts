@@ -8,6 +8,18 @@ export function useMyCodeUI() {
   const chordCells = useMobxGetter(myCodeUIStore, "chordCells")
   const lastSelection = useMobxGetter(myCodeUIStore, "lastSelection")
 
+  const activeInstrument = useMobxGetter(myCodeUIStore, "activeInstrument")
+  const activeTaskIdByInstrument = useMobxGetter(myCodeUIStore, "activeTaskIdByInstrument")
+  const selectedArtifactIdByInstrument = useMobxGetter(myCodeUIStore, "selectedArtifactIdByInstrument")
+  const activeTaskForActiveInstrument = useMobxGetter(myCodeUIStore, "activeTaskForActiveInstrument")
+  const selectedArtifactIdForActiveInstrument = useMobxGetter(myCodeUIStore, "selectedArtifactIdForActiveInstrument")
+
+
+  // 结果展示会用到：当前乐器对应 task、以及它的 artifacts
+  const tasksById = useMobxGetter(myCodeUIStore, "tasksById")
+  const artifactOpsById = useMobxGetter(myCodeUIStore, "artifactOpsById")
+
+
 
   // actions 不需要订阅，直接用
   const actions = useMemo(
@@ -19,10 +31,29 @@ export function useMyCodeUI() {
       resetChords: myCodeUIStore.resetChords,
       clearAll: myCodeUIStore.clearAll,
       toPayload: myCodeUIStore.toPayload,
+      setActiveInstrument: myCodeUIStore.setActiveInstrument,
+      setActiveTaskForInstrument: myCodeUIStore.setActiveTaskForInstrument,
+      setSelectedArtifactForInstrument: myCodeUIStore.setSelectedArtifactForInstrument,
+      clearSelectedArtifactForInstrument: myCodeUIStore.clearSelectedArtifactForInstrument,
     }),
     []
   )
 
-  return { instruments, chordCells, lastSelection, ...actions }
+  return {
+    instruments,
+    chordCells,
+    lastSelection,
+
+    tasksById,
+    artifactOpsById,
+    activeInstrument,
+    activeTaskIdByInstrument,
+    selectedArtifactIdByInstrument,
+    activeTaskForActiveInstrument,
+    selectedArtifactIdForActiveInstrument,
+
+    ...actions,
+  }
+
 }
 

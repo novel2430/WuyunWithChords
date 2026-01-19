@@ -1,5 +1,5 @@
 export const CONSTANTS = {
-  headerTitle: "Hello World, Agent",
+  headerTitle: "🎧 WuYun with Chords !",
   rightPanel: {
     chordsLabel: "伴奏生成",
     uploadLabel: "参考生成",
@@ -8,12 +8,22 @@ export const CONSTANTS = {
   },
   chordMode: {
     pianoLabel: "🎹 钢琴",
-    bassLabel: "🎸 吉他",
-    guitarLabel: "🎸 贝斯",
+    guitarLabel: "🎸 吉他",
+    bassLabel: "🎸 贝斯",
     instrumentLabel: "🎷 乐器选择 (可多选)",
     chordGenLabel: "🎶 和弦行进指定",
     clearBtnLabel: "清除选区",
-    genBtnLabel: "覆写生成",
+    genBtnLabel: "生成",
+    resultTab: {
+      headLabel: "🚀 生成结果",
+      piano: "钢琴",
+      guitar: "吉他",
+      bass: "贝斯",
+      noTaskYet: "尚无结果",
+      noTaskLabel: "该乐器还没有生成记录",
+      noTaskHint: "提示：先点“生成”，然后在 Task Tab 看任务进度；成功后这里会出现可选的 MIDI",
+      updateSelection: "覆盖选区",
+    },
   },
   chordProgression: {
     emptyHint: "先选择小节范围，然后这里会出现对应数量的和弦格子",

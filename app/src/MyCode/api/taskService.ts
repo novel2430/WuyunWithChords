@@ -205,7 +205,7 @@ export function useMyCodeTaskService() {
   const runChordsToMidisFromStore = useCallback(
   async (inst?: "piano" | "guitar" | "bass") => {
     const chords = myCodeUIStore.chordCells.map((s) => s.trim())
-    const bpm = currentTempo
+    const bpm = currentTempo.toFixed(2)
     const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
     const segmentation = buildSegmentationFromBars(bars)
     const n_midi = 5
@@ -221,7 +221,8 @@ export function useMyCodeTaskService() {
       bpm,
       n_midi,
       inst: instFinal, // ✅ 直接进 payload
-    })
+    },
+    { inst: instFinal })
   },
   [runTask, currentTempo],
 )
@@ -347,8 +348,11 @@ export function useMyCodeTaskService() {
           throw new Error("该 MIDI 没有可导入的 note events。")
         }
 
+        const scale = parsed.payload.timebase > 0 ? (currentTimebase / parsed.payload.timebase) : 1
+        const rangeLenInPayloadTicks = Math.max(1, Math.floor(rangeLen / Math.max(1e-6, scale)))
         // ✅ 先把 payload 裁切到选区长度（仍以 0 为起点）
-        const clippedPayload = clampMidiNotesPayloadToRangeLen(parsed.payload, rangeLen)
+        const clippedPayload = clampMidiNotesPayloadToRangeLen(parsed.payload, rangeLenInPayloadTicks)
+
         if (!(clippedPayload.notes?.length ?? 0)) {
           throw new Error("导入后在该选区内没有可写入的 notes（可能选区太短）。")
         }
