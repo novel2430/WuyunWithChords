@@ -190,11 +190,7 @@ export const TaskListPanel: FC<Props> = ({
 }) => {
   const tasksById = useMobxGetter(myCodeUIStore as any, "tasksById") as Record<string, TaskRecord> | null
 
-  const tasks = useMemo(() => {
-    const arr = Object.values(tasksById ?? {}).filter((t) => !!t?.taskId)
-    arr.sort((a, b) => (Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0)))
-    return arr
-  }, [tasksById])
+  const tasks = useMobxGetter(myCodeUIStore as any, "tasksList") as TaskRecord[]
 
   const onPick = useCallback(
     (t: TaskRecord) => {

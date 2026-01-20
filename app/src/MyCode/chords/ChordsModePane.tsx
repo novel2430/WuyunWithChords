@@ -12,7 +12,7 @@ import { CONSTANTS } from "../constants"
 import { useMyCodeUI } from "../store/useMyCodeUI"
 import { useSelectionInfo } from "../barSelection/useSelectionInfo"
 import { validateSelection, validateChords } from "../chordsUtils"
-import { useMyCodeTaskService } from "../api/taskService"
+import { useTaskService } from "../api/taskServiceContext"
 
 
 const Wrap = styled.div`
@@ -253,10 +253,10 @@ export const ChordsModePane: FC = () => {
   const track = useTrack(selectedTrackId)
   const trackName = track.name
 
-  const { runChordsToMidisFromStore, applyArtifactToSelection } = useMyCodeTaskService()
+  const { runChordsToMidisFromStore, applyArtifactToSelection } = useTaskService()
 
   const {
-    instruments: inst,
+    instruments,
     chordCells,
     toggleInstrument,
     setChordCells,
@@ -277,17 +277,18 @@ export const ChordsModePane: FC = () => {
   const validation = useMemo(() => {
     const vSel = validateSelection(selectionInfo)
     if (!vSel.ok) return vSel
-    if (inst.size === 0) return { ok: false, msg: "请选择至少一种乐器。" }
+    if (instruments.size === 0) return { ok: false, msg: "请选择至少一种乐器。" }
     return validateChords(chordCells, selectionInfo!.bars)
-  }, [selectionInfo, inst, chordCells])
+  }, [selectionInfo, instruments, chordCells])
 
   const doGenerate = useCallback(async () => {
-    const instArr = Array.from(inst)
+    const instArr = Array.from(instruments)
     if (instArr.length === 0) return
     for (const instName of instArr) {
+      console.log(instName)
       await runChordsToMidisFromStore(instName)
     }
-  }, [runChordsToMidisFromStore])
+  }, [runChordsToMidisFromStore, instruments])
 
   const activeTask = activeTaskForActiveInstrument
   const selectedArtifactId = selectedArtifactIdForActiveInstrument
@@ -344,13 +345,13 @@ export const ChordsModePane: FC = () => {
       <div>
         <SectionTitle>{CONSTANTS.chordMode.instrumentLabel}</SectionTitle>
         <InstrumentsRow>
-          <Chip active={inst.has("piano")} onMouseDown={() => toggleInstrument("piano")}>
+          <Chip active={instruments.has("piano")} onMouseDown={() => toggleInstrument("piano")}>
             {CONSTANTS.chordMode.pianoLabel}
           </Chip>
-          <Chip active={inst.has("guitar")} onMouseDown={() => toggleInstrument("guitar")}>
+          <Chip active={instruments.has("guitar")} onMouseDown={() => toggleInstrument("guitar")}>
             {CONSTANTS.chordMode.guitarLabel}
           </Chip>
-          <Chip active={inst.has("bass")} onMouseDown={() => toggleInstrument("bass")}>
+          <Chip active={instruments.has("bass")} onMouseDown={() => toggleInstrument("bass")}>
             {CONSTANTS.chordMode.bassLabel}
           </Chip>
         </InstrumentsRow>

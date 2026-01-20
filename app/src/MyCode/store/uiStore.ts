@@ -236,4 +236,11 @@ export class MyCodeUIStore {
     if (!this.activeTaskId) return null
     return this.tasksById[this.activeTaskId] ?? null
   }
+
+  get tasksList(): TaskRecord[] {
+  return this.taskOrder
+    .map((id) => this.tasksById[id])
+    .filter(Boolean)
+}
+
 }

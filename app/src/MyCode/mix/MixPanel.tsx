@@ -16,7 +16,7 @@ import { useMyCodeUI } from "../store/useMyCodeUI"
 import { useSong } from "../../hooks/useSong"
 import { usePianoRoll } from "../../hooks/usePianoRoll"
 
-import { useMyCodeTaskService } from "../api/taskService"
+import { useTaskService } from "../api/taskServiceContext"
 
 const Wrap = styled.div`
   display: flex;
@@ -193,7 +193,7 @@ export const MixPanel: FC = () => {
 
   const activeTask = useMobxGetter(myCodeUIStore, "activeTask")
 
-  const { runRefMidisMixSet, applyArtifactToSelection } = useMyCodeTaskService()
+  const { runRefMidisMixSet, applyArtifactToSelection } = useTaskService()
 
   // --- upload mode states ---
   const fileARef = useRef<HTMLInputElement | null>(null)

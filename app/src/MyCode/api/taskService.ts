@@ -223,7 +223,7 @@ export function useMyCodeTaskService() {
   const runChordsToMidisFromStore = useCallback(
     async (inst?: "piano" | "guitar" | "bass") => {
       const chords = myCodeUIStore.chordCells.map((s) => s.trim())
-      const bpm = currentTempo.toFixed(2)
+      const bpm = Number(currentTempo.toFixed(2))
       const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
       const segmentation = buildSegmentationFromBars(bars)
       const n_midi = 5

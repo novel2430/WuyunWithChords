@@ -11,6 +11,8 @@ import { TaskListPanel } from "./tasks/TaskListPanel"
 import { MixPanel } from "./mix/MixPanel"
 
 import { useToast } from "dialog-hooks"
+import { useMyCodeTaskService } from "./api/taskService"
+import { TaskServiceProvider } from "./api/taskServiceContext"
 
 const Main = styled.div`
   height: 100%;
@@ -75,6 +77,8 @@ export function RightPanel() {
 
   const toast = useToast()
 
+  const taskSvc = useMyCodeTaskService()
+
   return (
     <Main>
       <Top>
@@ -92,15 +96,17 @@ export function RightPanel() {
       </Top>
 
       <SwitchArea>
-        <AnimatedPane key={mode}>
-          <ContentArea>
-            {mode === "chords" && <ChordsModePane />}
+        <TaskServiceProvider>
+          <AnimatedPane key={mode}>
+            <ContentArea>
+              {mode === "chords" && <ChordsModePane />}
 
-            {mode === "upload" && <UploadMidiPanel />}
-            {mode === "mix" && <MixPanel />}
-            {mode === "task" && <TaskListPanel />}
-          </ContentArea>
-        </AnimatedPane>
+              {mode === "upload" && <UploadMidiPanel />}
+              {mode === "mix" && <MixPanel />}
+              {mode === "task" && <TaskListPanel />}
+            </ContentArea>
+          </AnimatedPane>
+        </TaskServiceProvider>
       </SwitchArea>
     </Main>
   )

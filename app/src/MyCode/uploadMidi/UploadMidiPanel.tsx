@@ -15,7 +15,7 @@ import { useMyCodeTaskService } from "../api/taskService"
 import { useSong } from "../../hooks/useSong"
 import { useExtractBarSelectionNotes } from "../barSelection/useBarSelectionMidi"
 import { notesToInMemoryMidiFile } from "../midiUtils"
-
+import { useTaskService } from "../api/taskServiceContext"
 
 const Wrap = styled.div`
   display: flex;
@@ -233,7 +233,7 @@ export const UploadMidiPanel: FC = () => {
     setLastSelection,
     ensureChordCellsLength,
   } = useMyCodeUI()
-  const { runRefMidiToMidiFromStore, applyArtifactToSelection } = useMyCodeTaskService()
+  const { runRefMidiToMidiFromStore, applyArtifactToSelection } = useTaskService()
   const { selectedTrackId } = usePianoRoll()
   const track = useTrack(selectedTrackId)
   const trackName = track.name
