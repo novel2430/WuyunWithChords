@@ -336,13 +336,6 @@ export const ChordsModePane: FC = () => {
   return (
     <Wrap>
       <div>
-        <SelectionInfoBox
-          trackName={trackName}
-          trackId={selectedTrackId}
-          selectionInfo={selectionInfo}
-        />
-      </div>
-      <div>
         <SectionTitle>{CONSTANTS.chordMode.instrumentLabel}</SectionTitle>
         <InstrumentsRow>
           <Chip active={instruments.has("piano")} onMouseDown={() => toggleInstrument("piano")}>
@@ -356,18 +349,6 @@ export const ChordsModePane: FC = () => {
           </Chip>
         </InstrumentsRow>
       </div>
-
-      <div>
-        <SectionTitle>{CONSTANTS.chordMode.chordGenLabel}</SectionTitle>
-        <ChordGridInput
-          startBar={selectionInfo?.startBar ?? 1}
-          barsCount={selectionInfo?.bars ?? 0}
-          value={chordCells}
-          onChange={setChordCells}
-        />
-        {!validation.ok && <ErrorText>{validation.msg}</ErrorText>}
-      </div>
-
 
       <div>
         <SectionTitle>{CONSTANTS.chordMode.resultTab.headLabel}</SectionTitle>

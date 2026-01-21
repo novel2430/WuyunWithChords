@@ -309,13 +309,6 @@ export const UploadMidiPanel: FC = () => {
   return (
     <Wrap>
       <div>
-        <SelectionInfoBox
-          trackName={trackName}
-          trackId={selectedTrackId}
-          selectionInfo={selectionInfo}
-        />
-      </div>
-      <div>
         <SectionTitle>{CONSTANTS.uploadMode.instrumentLabel}</SectionTitle>
         <InstrumentsRow>
           <Chip active={activeInstrument === "piano"} onMouseDown={() => setActiveInstrument("piano")}>
@@ -347,15 +340,6 @@ export const UploadMidiPanel: FC = () => {
         </SmallHint>
       </div>
       {refMode === "upload" && <MidiView />}
-      <div>
-        <SectionTitle>{CONSTANTS.chordMode.chordGenLabel}</SectionTitle>
-        <ChordGridInput
-          startBar={selectionInfo?.startBar ?? 1}
-          barsCount={selectionInfo?.bars ?? 0}
-          value={chordCells}
-          onChange={setChordCells}
-        />
-      </div>
       <div>
         <SectionTitle>{CONSTANTS.chordMode.resultTab.headLabel}</SectionTitle>
         <ResultCard>

@@ -6,6 +6,7 @@ export function useMyCodeUI() {
   // 用 getter 订阅需要的字段
   const instruments = useMobxGetter(myCodeUIStore, "instruments")
   const chordCells = useMobxGetter(myCodeUIStore, "chordCells")
+  const chordsByBar = useMobxGetter(myCodeUIStore, "chordsByBar")
   const lastSelection = useMobxGetter(myCodeUIStore, "lastSelection")
 
   const activeInstrument = useMobxGetter(myCodeUIStore, "activeInstrument")
@@ -27,6 +28,12 @@ export function useMyCodeUI() {
       toggleInstrument: myCodeUIStore.toggleInstrument,
       setChordCells: myCodeUIStore.setChordCells,
       ensureChordCellsLength: myCodeUIStore.ensureChordCellsLength,
+      ensureChordsByBarLength: myCodeUIStore.ensureChordsByBarLength,
+      getChordAtBar: myCodeUIStore.getChordAtBar,
+      setChordAtBar: myCodeUIStore.setChordAtBar,
+      setChordsForRange: myCodeUIStore.setChordsForRange,
+      getChordsSlice: myCodeUIStore.getChordsSlice,
+      syncChordCellsFromRange: myCodeUIStore.syncChordCellsFromRange,
       setLastSelection: myCodeUIStore.setLastSelection,
       resetChords: myCodeUIStore.resetChords,
       clearAll: myCodeUIStore.clearAll,
@@ -42,6 +49,7 @@ export function useMyCodeUI() {
   return {
     instruments,
     chordCells,
+    chordsByBar,
     lastSelection,
 
     tasksById,

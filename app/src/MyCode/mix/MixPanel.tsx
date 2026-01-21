@@ -354,10 +354,6 @@ export const MixPanel: FC = () => {
   return (
     <Wrap>
       <div>
-        <SelectionInfoBox trackName={null} trackId={selectedTrackId ?? null} selectionInfo={selectionInfo} />
-      </div>
-
-      <div>
         <SectionTitle>{CONSTANTS.mixPanel.mixingModeChooseLabel}</SectionTitle>
         <ModeToggle>
           <ModeTab active={refMode === "upload"} onMouseDown={() => setRefMode("upload")}>
@@ -433,18 +429,6 @@ export const MixPanel: FC = () => {
           <SmallHint>{CONSTANTS.mixPanel.selectionHint}</SmallHint>
         </Card>
       )}
-
-      <div>
-        <SectionTitle>{CONSTANTS.chordMode.chordGenLabel}</SectionTitle>
-        <ChordGridInput
-          startBar={(selectionInfo?.startBar ?? 1)}
-          barsCount={bars}
-          value={chordCells}
-          onChange={setChordCells}
-        />
-        {!validation.ok && <SmallHint style={{ opacity: 0.9 }}>{validation.msg}</SmallHint>}
-      </div>
-
       <div>
         <SectionTitle>{CONSTANTS.mixPanel.resultsLabel}</SectionTitle>
         <Card>

@@ -222,15 +222,20 @@ export function useMyCodeTaskService() {
   const { currentTempo } = useConductorTrack()
   const runChordsToMidisFromStore = useCallback(
     async (inst?: "piano" | "guitar" | "bass") => {
-      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+      // const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+      const startBar = myCodeUIStore.lastSelection?.startBar ?? 1
+      const endBar = myCodeUIStore.lastSelection?.endBar ?? 4
+      const chords = myCodeUIStore.chordsByBar.slice(startBar-1, endBar)
       const bpm = Number(currentTempo.toFixed(2))
       const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
       const segmentation = buildSegmentationFromBars(bars)
       const n_midi = 5
-      const chord_beats = chords.map(() => 4)
+      const chord_beats = new Array(bars).fill(4)
 
       // ✅ inst 优先用入参，否则你也可以 fallback 到 store 的某个默认
       const instFinal = inst ?? "piano"
+
+      console.log(chords)
 
       const taskId = await runTask(
         "chords_to_midis",
@@ -259,12 +264,13 @@ export function useMyCodeTaskService() {
 
   const runRefMidiToMidiFromStore = useCallback(
     async (refMidi: File, inst?: "piano" | "guitar" | "bass") => {
-      // 1) chords / bars：跟 chords_to_midis 一樣，沿用 store 的 chordCells + lastSelection
-      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+      const startBar = myCodeUIStore.lastSelection?.startBar ?? 1
+      const endBar = myCodeUIStore.lastSelection?.endBar ?? 4
+      const chords = myCodeUIStore.chordsByBar.slice(startBar-1, endBar)
 
       const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
       const segmentation = buildSegmentationFromBars(bars)
-      const chord_beats = chords.map(() => 4)
+      const chord_beats = new Array(bars).fill(4)
 
       // 2) bpm：后端 type 是 number，别用 toFixed 的 string
       const bpm = Number(currentTempo.toFixed(2))
@@ -297,11 +303,13 @@ export function useMyCodeTaskService() {
       midiB: File,
       alphas: number[] = [0, 0.25, 0.5, 0.75, 1],
     ) => {
-      const chords = myCodeUIStore.chordCells.map((s) => s.trim())
+      const startBar = myCodeUIStore.lastSelection?.startBar ?? 1
+      const endBar = myCodeUIStore.lastSelection?.endBar ?? 4
+      const chords = myCodeUIStore.chordsByBar.slice(startBar-1, endBar)
 
       const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
       const segmentation = buildSegmentationFromBars(bars)
-      const chord_beats = chords.map(() => 4)
+      const chord_beats = new Array(bars).fill(4)
 
       const bpm = Number(currentTempo.toFixed(2))
 
