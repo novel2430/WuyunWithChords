@@ -262,41 +262,46 @@ export function useMyCodeTaskService() {
     [runTask, currentTempo],
   )
 
-  const runRefMidiToMidiFromStore = useCallback(
-    async (refMidi: File, inst?: "piano" | "guitar" | "bass") => {
-      const startBar = myCodeUIStore.lastSelection?.startBar ?? 1
-      const endBar = myCodeUIStore.lastSelection?.endBar ?? 4
-      const chords = myCodeUIStore.chordsByBar.slice(startBar-1, endBar)
+   const runRefMidiToMidiFromStore = useCallback(
+	async (
+	  refMidi: File,
+	  targetChords: string[],
+	  inst?: "piano" | "guitar" | "bass",
+	) => {
+	  const chords = (Array.isArray(targetChords) ? targetChords : []).map((s) =>
+		String(s ?? "").trim(),
+	  )
 
-      const bars = myCodeUIStore.lastSelection?.bars ?? chords.length
-      const segmentation = buildSegmentationFromBars(bars)
-      const chord_beats = new Array(bars).fill(4)
+	  const bars = chords.length
+	  const segmentation = buildSegmentationFromBars(bars)
+	  const chord_beats = new Array(bars).fill(4)
+	  const bpm = Number(currentTempo.toFixed(2))
+	  const instFinal = inst ?? "piano"
 
-      // 2) bpm：后端 type 是 number，别用 toFixed 的 string
-      const bpm = Number(currentTempo.toFixed(2))
+	  const taskId = await runTask(
+		"ref_midi_to_midi",
+		{
+		  chords,
+		  chord_beats,
+		  segmentation,
+		  bpm,
+		  ref_midi: refMidi,
+		  inst: instFinal,
+		},
+		{ inst: instFinal },
+	  )
 
-      // 3) inst：单选乐器的最终值
-      const instFinal = inst ?? "piano"
+	  myCodeUIStore.upsertTask({
+		taskId,
+		inputBars: bars,
+		inputChords: chords,
+	  })
 
-      // 4) 提交任务（ref_midi_to_midi）
-      const taskId = await runTask(
-        "ref_midi_to_midi",
-        {
-          chords,
-          chord_beats,
-          segmentation,
-          bpm,
-          ref_midi: refMidi,
-          inst: instFinal,
-        },
-        { inst: instFinal },
-      )
-      myCodeUIStore.upsertTask({ taskId, inputBars: bars, inputChords: chords })
-      return taskId
-    },
-    [runTask, currentTempo],
+	  return taskId
+	},
+	[runTask, currentTempo],
   )
-
+  
   const runRefMidisMixSetFromStore = useCallback(
     async (
       midiA: File,

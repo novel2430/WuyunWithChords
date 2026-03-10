@@ -3,7 +3,7 @@ import { useMobxGetter } from "../../hooks/useMobxSelector"
 import { myCodeUIStore } from "./index"
 
 export function useMyCodeUI() {
-  // 用 getter 订阅需要的字段
+  // reactive values
   const instruments = useMobxGetter(myCodeUIStore, "instruments")
   const chordCells = useMobxGetter(myCodeUIStore, "chordCells")
   const chordsByBar = useMobxGetter(myCodeUIStore, "chordsByBar")
@@ -13,16 +13,20 @@ export function useMyCodeUI() {
   const activeTaskIdByInstrument = useMobxGetter(myCodeUIStore, "activeTaskIdByInstrument")
   const selectedArtifactIdByInstrument = useMobxGetter(myCodeUIStore, "selectedArtifactIdByInstrument")
   const activeTaskForActiveInstrument = useMobxGetter(myCodeUIStore, "activeTaskForActiveInstrument")
-  const selectedArtifactIdForActiveInstrument = useMobxGetter(myCodeUIStore, "selectedArtifactIdForActiveInstrument")
+  const selectedArtifactIdForActiveInstrument = useMobxGetter(
+    myCodeUIStore,
+    "selectedArtifactIdForActiveInstrument",
+  )
 
-
-  // 结果展示会用到：当前乐器对应 task、以及它的 artifacts
   const tasksById = useMobxGetter(myCodeUIStore, "tasksById")
   const artifactOpsById = useMobxGetter(myCodeUIStore, "artifactOpsById")
 
+  const uploadMidiTargetChords = useMobxGetter(
+    myCodeUIStore,
+    "uploadMidiTargetChords",
+  )
 
-
-  // actions 不需要订阅，直接用
+  // stable actions
   const actions = useMemo(
     () => ({
       toggleInstrument: myCodeUIStore.toggleInstrument,
@@ -42,8 +46,11 @@ export function useMyCodeUI() {
       setActiveTaskForInstrument: myCodeUIStore.setActiveTaskForInstrument,
       setSelectedArtifactForInstrument: myCodeUIStore.setSelectedArtifactForInstrument,
       clearSelectedArtifactForInstrument: myCodeUIStore.clearSelectedArtifactForInstrument,
+      setUploadMidiTargetChords: myCodeUIStore.setUploadMidiTargetChords,
+      setUploadMidiTargetChordAt: myCodeUIStore.setUploadMidiTargetChordAt,
+      ensureUploadMidiTargetChordsLength: myCodeUIStore.ensureUploadMidiTargetChordsLength,
     }),
-    []
+    [],
   )
 
   return {
@@ -60,8 +67,8 @@ export function useMyCodeUI() {
     activeTaskForActiveInstrument,
     selectedArtifactIdForActiveInstrument,
 
+    uploadMidiTargetChords,
+
     ...actions,
   }
-
 }
-

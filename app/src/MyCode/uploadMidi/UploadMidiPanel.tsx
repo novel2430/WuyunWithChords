@@ -5,13 +5,11 @@ import { ChordGridInput } from "../chords/ChordGridInput"
 import { CONSTANTS } from "../constants"
 import { useSelectionInfo } from "../barSelection/useSelectionInfo"
 import { useMyCodeUI } from "../store/useMyCodeUI"
-import { SelectionInfoBox } from "../SelectionInfoBox"
 import { useTrack } from "../../hooks/useTrack"
 import { usePianoRoll } from "../../hooks/usePianoRoll"
 import { useMobxGetter } from "../../hooks/useMobxSelector"
 import { myCodeUIStore } from "../store"
 import { validateSelection, validateChords } from "../chordsUtils"
-import { useMyCodeTaskService } from "../api/taskService"
 import { useSong } from "../../hooks/useSong"
 import { useExtractBarSelectionNotes } from "../barSelection/useBarSelectionMidi"
 import { notesToInMemoryMidiFile } from "../midiUtils"
@@ -221,17 +219,18 @@ const ModeTab = styled.button<{ active: boolean }>`
 export const UploadMidiPanel: FC = () => {
   const { selectionInfo } = useSelectionInfo()
   const {
-    instruments: inst,
-    chordCells,
-    setChordCells,
-    setActiveInstrument,
-    activeInstrument,
-    activeTaskForActiveInstrument,
-    setSelectedArtifactForInstrument,
-    selectedArtifactIdForActiveInstrument,
-    artifactOpsById,
-    setLastSelection,
-    ensureChordCellsLength,
+	instruments: inst,
+	uploadMidiTargetChords,
+	setUploadMidiTargetChords,
+	setUploadMidiTargetChordAt,
+	ensureUploadMidiTargetChordsLength,
+	setActiveInstrument,
+	activeInstrument,
+	activeTaskForActiveInstrument,
+	setSelectedArtifactForInstrument,
+	selectedArtifactIdForActiveInstrument,
+	artifactOpsById,
+	setLastSelection,
   } = useMyCodeUI()
   const { runRefMidiToMidiFromStore, applyArtifactToSelection } = useTaskService()
   const { selectedTrackId } = usePianoRoll()
@@ -249,12 +248,11 @@ export const UploadMidiPanel: FC = () => {
   type RefMode = "selection" | "upload"
   const [refMode, setRefMode] = useState<RefMode>("selection")
 
-
   const validation = useMemo(() => {
-    const vSel = validateSelection(selectionInfo)
-    if (!vSel.ok) return vSel
-    return validateChords(chordCells, selectionInfo!.bars)
-  }, [selectionInfo, inst, chordCells])
+	const vSel = validateSelection(selectionInfo)
+	if (!vSel.ok) return vSel
+	return validateChords(uploadMidiTargetChords, selectionInfo!.bars)
+  }, [selectionInfo, uploadMidiTargetChords])
 
   const onPickArtifact = useCallback(
     (artifactId: string) => {
@@ -268,26 +266,58 @@ export const UploadMidiPanel: FC = () => {
     await applyArtifactToSelection(selectedArtifactId)
   }, [applyArtifactToSelection, selectedArtifactId])
 
-  const onGenFromUploadedMidi = useCallback(async () => {
-    if (!validation.ok || !uploadedFile) return
-    await runRefMidiToMidiFromStore(uploadedFile, activeInstrument)
-  }, [validation.ok, uploadedFile, activeInstrument, runRefMidiToMidiFromStore])
-
   const onGenFromSelection = useCallback(async () => {
-    if (!validation.ok) return
+	if (!validation.ok) return
 
-    const res = extractNotes()
-    const notes = res?.notes ?? []
-    if (!notes.length) return  // 也可以 toast 提示“选区里没有 note”
+	const res = extractNotes()
+	const notes = res?.notes ?? []
+	if (!notes.length) return
 
-    const refFile = notesToInMemoryMidiFile(notes, timebase, "piano", "ref_selection.mid")
-    await runRefMidiToMidiFromStore(refFile, activeInstrument)
-  }, [validation.ok, extractNotes, timebase, activeInstrument, runRefMidiToMidiFromStore])
+	const refFile = notesToInMemoryMidiFile(
+	  notes,
+	  timebase,
+	  "piano",
+	  "ref_selection.mid",
+	)
 
+	await runRefMidiToMidiFromStore(
+	  refFile,
+	  uploadMidiTargetChords,
+	  activeInstrument,
+	)
+  }, [
+	validation.ok,
+	extractNotes,
+	timebase,
+	uploadMidiTargetChords,
+	activeInstrument,
+	runRefMidiToMidiFromStore,
+  ])
+  const onGenFromUploadedMidi = useCallback(async () => {
+	if (!validation.ok || !uploadedFile) return
+
+	await runRefMidiToMidiFromStore(
+	  uploadedFile,
+	  uploadMidiTargetChords,
+	  activeInstrument,
+	)
+  }, [
+	validation.ok,
+	uploadedFile,
+	uploadMidiTargetChords,
+	activeInstrument,
+	runRefMidiToMidiFromStore,
+  ])
 
   useEffect(() => {
-    if (selectionInfo?.bars) ensureChordCellsLength(selectionInfo.bars)
-  }, [selectionInfo?.bars, ensureChordCellsLength])
+	console.log(selectionInfo?.bars)
+	console.log("render target chords len", uploadMidiTargetChords.length)
+	if (selectionInfo?.bars) {
+	  ensureUploadMidiTargetChordsLength(selectionInfo.bars)
+	} else {
+	  setUploadMidiTargetChords([])
+	}
+  }, [selectionInfo?.bars, ensureUploadMidiTargetChordsLength, setUploadMidiTargetChords])
 
   useEffect(() => {
     if (!selectionInfo) {
@@ -340,6 +370,12 @@ export const UploadMidiPanel: FC = () => {
         </SmallHint>
       </div>
       {refMode === "upload" && <MidiView />}
+	  <ChordGridInput
+		startBar={selectionInfo?.startBar ?? 1}
+		barsCount={selectionInfo?.bars ?? 0}
+		value={uploadMidiTargetChords}
+		onChange={setUploadMidiTargetChords}
+	  />
       <div>
         <SectionTitle>{CONSTANTS.chordMode.resultTab.headLabel}</SectionTitle>
         <ResultCard>

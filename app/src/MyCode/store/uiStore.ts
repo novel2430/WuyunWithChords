@@ -49,6 +49,7 @@ export class MyCodeUIStore {
   // ✅ 全局按小节保存的和弦（1-based bar -> index = bar-1）
   chordsByBar: string[] = []
   lastSelection: BarSelectionSnapshot | null = null
+  uploadMidiTargetChords: string[] = []
 
   // ====== Chords generation result selection ======
   activeInstrument: Instrument = "piano"
@@ -195,6 +196,7 @@ export class MyCodeUIStore {
       activeInstrument: this.activeInstrument, // ✅ 可选：方便未来直接发
       chords: this.chordCells.map((s) => (s ?? "").trim()),
       chordsByBar: this.chordsByBar.map((s) => (s ?? "").trim()),
+	  uploadMidiTargetChords: this.uploadMidiTargetChords.map((s) => s ?? ""),
       selection: this.lastSelection ? toJS(this.lastSelection) : null,
     }
   }
@@ -211,6 +213,7 @@ export class MyCodeUIStore {
     this.chordCells = ["Am", "F", "C", "G"]
     this.chordsByBar = []
     this.lastSelection = null
+	this.uploadMidiTargetChords = []
   }
 
   // ---------- Midi Upload ----------
@@ -307,9 +310,37 @@ export class MyCodeUIStore {
   }
 
   get tasksList(): TaskRecord[] {
-  return this.taskOrder
-    .map((id) => this.tasksById[id])
-    .filter(Boolean)
-}
+	return this.taskOrder
+	  .map((id) => this.tasksById[id])
+	  .filter(Boolean)
+  }
+  
+  setUploadMidiTargetChords(next: string[]) {
+	this.uploadMidiTargetChords = Array.isArray(next)
+	  ? next.map((s) => String(s ?? ""))
+	  : []
+  }
+
+  ensureUploadMidiTargetChordsLength(n: number) {
+	if (!n || n < 1) {
+	  this.uploadMidiTargetChords = []
+	  return
+	}
+	const next = this.uploadMidiTargetChords.slice(0, n)
+	while (next.length < n) next.push("")
+	this.uploadMidiTargetChords = next
+  }
+
+  setUploadMidiTargetChordAt(index: number, value: string) {
+	const i = Math.max(0, Math.floor(index))
+	const next = this.uploadMidiTargetChords.slice()
+	while (next.length <= i) next.push("")
+	next[i] = String(value ?? "").trim()
+	this.uploadMidiTargetChords = next
+  }
+
+  resetUploadMidiTargetChords() {
+	this.uploadMidiTargetChords = []
+  }
 
 }
